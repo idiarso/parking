@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateLaporanTable extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('laporan', function (Blueprint $table) {
             $table->id();
@@ -58,7 +58,11 @@ class CreateLaporanTable extends Migration
             ])->default('draft');
             
             $table->timestamps();
-            $table->softDeletes();
+            
+            // Tambahkan soft deletes hanya jika belum ada
+            if (!Schema::hasColumn('laporan', 'deleted_at')) {
+                $table->softDeletes();
+            }
             
             // Index untuk pencarian dan sorting
             $table->index(['jenis_laporan', 'tanggal_mulai', 'tanggal_selesai']);
@@ -66,8 +70,15 @@ class CreateLaporanTable extends Migration
         });
     }
 
-    public function down()
+    public function down(): void
     {
+        // Hapus kolom soft delete hanya jika ada
+        if (Schema::hasColumn('laporan', 'deleted_at')) {
+            Schema::table('laporan', function (Blueprint $table) {
+                $table->dropSoftDeletes();
+            });
+        }
+        
         Schema::dropIfExists('laporan');
     }
 }

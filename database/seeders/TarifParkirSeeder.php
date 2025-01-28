@@ -14,8 +14,8 @@ class TarifParkirSeeder extends Seeder
                 'jenis_kendaraan' => 'motor',
                 'tarif_per_jam' => 3000,
                 'tarif_per_hari' => 25000,
-                'jam_mulai' => '06:00',
-                'jam_selesai' => '22:00',
+                'denda_per_jam' => 5000,
+                'keterangan' => 'Tarif parkir motor untuk area umum',
                 'aktif' => true,
                 'created_at' => now(),
                 'updated_at' => now()
@@ -24,8 +24,8 @@ class TarifParkirSeeder extends Seeder
                 'jenis_kendaraan' => 'mobil',
                 'tarif_per_jam' => 5000,
                 'tarif_per_hari' => 50000,
-                'jam_mulai' => '06:00',
-                'jam_selesai' => '22:00',
+                'denda_per_jam' => 10000,
+                'keterangan' => 'Tarif parkir mobil untuk area umum',
                 'aktif' => true,
                 'created_at' => now(),
                 'updated_at' => now()

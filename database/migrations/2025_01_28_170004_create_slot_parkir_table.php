@@ -10,11 +10,13 @@ class CreateSlotParkirTable extends Migration
     {
         Schema::create('slot_parkir', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_slot')->unique();
+            $table->string('nomor')->unique();
             $table->enum('jenis_kendaraan', ['motor', 'mobil']);
-            $table->enum('status', ['tersedia', 'terisi', 'tidak_tersedia'])->default('tersedia');
-            $table->text('catatan')->nullable();
+            $table->enum('status', ['kosong', 'terisi', 'rusak', 'maintenance'])->default('kosong');
+            $table->string('lokasi')->nullable();
+            $table->text('keterangan')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

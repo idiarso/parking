@@ -1,235 +1,121 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Parkir Masuk') }}
+        </h2>
+    </x-slot>
 
-@section('styles')
-<style>
-    .scanner-overlay {
-        position: relative;
-        border: 2px dashed #007bff;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-    }
-    .scanner-overlay::before {
-        content: '';
-        position: absolute;
-        top: -10px;
-        left: -10px;
-        right: -10px;
-        bottom: -10px;
-        background: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 10px,
-            rgba(0,123,255,0.1) 10px,
-            rgba(0,123,255,0.1) 20px
-        );
-        z-index: -1;
-        opacity: 0.5;
-    }
-</style>
-@endsection
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    @if (session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            {{ session('success') }}
+                        </div>
+                    @endif
 
-@section('content')
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-12">
-            <h1 class="h3 mb-4 text-gray-800">
-                <i class="fas fa-sign-in-alt"></i> Pintu Masuk Kendaraan
-            </h1>
-        </div>
-    </div>
+                    @if (session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            {{ session('error') }}
+                        </div>
+                    @endif
 
-    <div class="row">
-        <!-- Scanner Kendaraan -->
-        <div class="col-md-8">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-camera"></i> Scanner Kendaraan
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="scanner-overlay">
-                        <div id="scanner-container" style="height: 400px;">
-                            <!-- Placeholder untuk scanner -->
-                            <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                                <i class="fas fa-qr-code fa-4x text-muted mb-3"></i>
-                                <h4 class="text-muted">Posisikan Kendaraan di Area Scanner</h4>
+                    <form action="{{ route('parkir.masuk.proses') }}" method="POST" class="space-y-4">
+                        @csrf
+                        <div>
+                            <x-input-label for="nomor_plat" :value="__('Nomor Plat')" />
+                            <x-text-input id="nomor_plat" name="nomor_plat" type="text" class="mt-1 block w-full" 
+                                required autofocus autocomplete="off" placeholder="Contoh: B1234XYZ" 
+                                value="{{ old('nomor_plat') }}" />
+                            <x-input-error :messages="$errors->get('nomor_plat')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="jenis_kendaraan" :value="__('Jenis Kendaraan')" />
+                            <select id="jenis_kendaraan" name="jenis_kendaraan" 
+                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
+                                required>
+                                <option value="">Pilih Jenis Kendaraan</option>
+                                <option value="motor" {{ old('jenis_kendaraan') == 'motor' ? 'selected' : '' }}>Motor</option>
+                                <option value="mobil" {{ old('jenis_kendaraan') == 'mobil' ? 'selected' : '' }}>Mobil</option>
+                            </select>
+                            <x-input-error :messages="$errors->get('jenis_kendaraan')" class="mt-2" />
+                            
+                            <div id="slot-info" class="mt-2 text-sm text-gray-600">
+                                Slot tersedia: 
+                                <span id="slot-tersedia">-</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Form Input Manual -->
-        <div class="col-md-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-keyboard"></i> Input Manual
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <form id="inputManualForm">
-                        <div class="mb-3">
-                            <label class="form-label">Plat Nomor</label>
-                            <input type="text" class="form-control" name="plat_nomor" required>
+                        <div>
+                            <x-input-label for="pemilik" :value="__('Nama Pemilik')" />
+                            <x-text-input id="pemilik" name="pemilik" type="text" class="mt-1 block w-full" 
+                                autocomplete="off" placeholder="Nama Pemilik Kendaraan" 
+                                value="{{ old('pemilik') }}" />
+                            <x-input-error :messages="$errors->get('pemilik')" class="mt-2" />
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Jenis Kendaraan</label>
-                            <select class="form-select" name="jenis_kendaraan" required>
-                                <option value="motor">Motor</option>
-                                <option value="mobil">Mobil</option>
-                            </select>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="merk" :value="__('Merk Kendaraan')" />
+                                <x-text-input id="merk" name="merk" type="text" class="mt-1 block w-full" 
+                                    autocomplete="off" placeholder="Merk Kendaraan" 
+                                    value="{{ old('merk') }}" />
+                                <x-input-error :messages="$errors->get('merk')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="warna" :value="__('Warna Kendaraan')" />
+                                <x-text-input id="warna" name="warna" type="text" class="mt-1 block w-full" 
+                                    autocomplete="off" placeholder="Warna Kendaraan" 
+                                    value="{{ old('warna') }}" />
+                                <x-input-error :messages="$errors->get('warna')" class="mt-2" />
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Slot Parkir</label>
-                            <select class="form-select" name="slot_parkir" required>
-                                @foreach($slotKosong as $slot)
-                                <option value="{{ $slot->id }}">{{ $slot->nomor_slot }} ({{ $slot->tipe }})</option>
-                                @endforeach
-                            </select>
+
+                        <div class="flex items-center gap-4">
+                            <x-primary-button>{{ __('Proses Parkir Masuk') }}</x-primary-button>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Kondisi Kendaraan</label>
-                            <textarea class="form-control" name="kondisi_kendaraan" rows="3" placeholder="Catatan kondisi kendaraan"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-save"></i> Simpan Data Masuk
-                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Riwayat Kendaraan Masuk Hari Ini -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-history"></i> Riwayat Kendaraan Masuk Hari Ini
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped" id="riwayatMasukTable">
-                            <thead>
-                                <tr>
-                                    <th>Plat Nomor</th>
-                                    <th>Jenis</th>
-                                    <th>Slot</th>
-                                    <th>Waktu Masuk</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($riwayatMasuk as $kendaraan)
-                                <tr>
-                                    <td>{{ $kendaraan->plat_nomor }}</td>
-                                    <td>{{ ucfirst($kendaraan->jenis_kendaraan) }}</td>
-                                    <td>{{ $kendaraan->slot->nomor_slot }}</td>
-                                    <td>{{ $kendaraan->waktu_masuk->format('H:i:s') }}</td>
-                                    <td>
-                                        <button class="btn btn-info btn-sm" onclick="detailKendaraan({{ $kendaraan->id }})">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const jenisKendaraanSelect = document.getElementById('jenis_kendaraan');
+            const slotTersediaSpan = document.getElementById('slot-tersedia');
 
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi DataTable
-    $('#riwayatMasukTable').DataTable({
-        responsive: true,
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
-        }
-    });
-
-    // Inisialisasi Scanner
-    function startScanner() {
-        const scanner = new Html5Qrcode("scanner-container");
-        const config = { fps: 10, qrbox: 250 };
-
-        scanner.start({ facingMode: "environment" }, config, onScanSuccess);
-
-        function onScanSuccess(decodedText, decodedResult) {
-            Swal.fire({
-                title: 'Kendaraan Terdeteksi',
-                text: `Plat Nomor: ${decodedText}`,
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonText: 'Proses',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Proses data kendaraan
-                    processScanResult(decodedText);
+            function cekSlotTersedia() {
+                const jenisKendaraan = jenisKendaraanSelect.value;
+                
+                if (jenisKendaraan) {
+                    fetch('{{ route('parkir.slot.cek') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ jenis_kendaraan: jenisKendaraan })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        slotTersediaSpan.textContent = data.slot_tersedia;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        slotTersediaSpan.textContent = '-';
+                    });
+                } else {
+                    slotTersediaSpan.textContent = '-';
                 }
-            });
-
-            scanner.pause(true);
-        }
-    }
-
-    // Proses hasil scan
-    function processScanResult(platNomor) {
-        // Implementasi logika proses kendaraan masuk
-        Swal.fire({
-            title: 'Proses Kendaraan',
-            text: `Memproses kendaraan dengan plat nomor ${platNomor}`,
-            icon: 'info'
-        });
-    }
-
-    // Input Manual Form
-    $('#inputManualForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        Swal.fire({
-            title: 'Konfirmasi Input',
-            text: 'Apakah data kendaraan sudah benar?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, Simpan',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Kirim data ke server
-                Swal.fire({
-                    title: 'Berhasil',
-                    text: 'Data kendaraan berhasil disimpan',
-                    icon: 'success'
-                });
             }
+
+            jenisKendaraanSelect.addEventListener('change', cekSlotTersedia);
         });
-    });
-
-    // Memulai scanner
-    startScanner();
-});
-
-function detailKendaraan(id) {
-    Swal.fire({
-        title: 'Detail Kendaraan',
-        text: 'Fitur detail kendaraan akan segera hadir!',
-        icon: 'info'
-    });
-}
-</script>
-@endsection
+    </script>
+    @endpush
+</x-app-layout>

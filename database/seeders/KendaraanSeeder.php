@@ -18,7 +18,7 @@ class KendaraanSeeder extends Seeder
         // Contoh data kendaraan motor
         $motorData = [
             [
-                'nomor_plat' => 'B1234XYZ',
+                'plat_nomor' => 'B1234XYZ',
                 'jenis_kendaraan' => 'motor',
                 'pemilik' => 'Ahmad Susanto',
                 'merk' => 'Honda Beat',
@@ -28,7 +28,7 @@ class KendaraanSeeder extends Seeder
                 'waktu_keluar' => Carbon::now(),
             ],
             [
-                'nomor_plat' => 'B5678ABC',
+                'plat_nomor' => 'B5678ABC',
                 'jenis_kendaraan' => 'motor',
                 'pemilik' => 'Siti Rahayu',
                 'merk' => 'Yamaha Mio',
@@ -42,7 +42,7 @@ class KendaraanSeeder extends Seeder
         // Contoh data kendaraan mobil
         $mobilData = [
             [
-                'nomor_plat' => 'B9012DEF',
+                'plat_nomor' => 'B9012DEF',
                 'jenis_kendaraan' => 'mobil',
                 'pemilik' => 'Budi Setiawan',
                 'merk' => 'Toyota Avanza',
@@ -52,7 +52,7 @@ class KendaraanSeeder extends Seeder
                 'waktu_keluar' => Carbon::now(),
             ],
             [
-                'nomor_plat' => 'B3456GHI',
+                'plat_nomor' => 'B3456GHI',
                 'jenis_kendaraan' => 'mobil',
                 'pemilik' => 'Dewi Kartika',
                 'merk' => 'Honda CR-V',
@@ -69,7 +69,7 @@ class KendaraanSeeder extends Seeder
         foreach ($kendaraanData as $data) {
             // Cari slot parkir yang tersedia sesuai jenis kendaraan
             $slotParkir = SlotParkir::where('jenis_kendaraan', $data['jenis_kendaraan'])
-                                    ->where('status', 'tersedia')
+                                    ->where('status', 'kosong')
                                     ->first();
 
             // Hitung durasi parkir
@@ -97,12 +97,6 @@ class KendaraanSeeder extends Seeder
                 // Buat kendaraan dengan slot parkir
                 $kendaraan = Kendaraan::create(array_merge($data, [
                     'slot_parkir_id' => $slotParkir->id,
-                    'durasi_parkir' => $durasiParkir,
-                    'biaya_parkir' => $biayaParkir
-                ]));
-            } else {
-                // Jika tidak ada slot tersedia, buat kendaraan tanpa slot
-                $kendaraan = Kendaraan::create(array_merge($data, [
                     'durasi_parkir' => $durasiParkir,
                     'biaya_parkir' => $biayaParkir
                 ]));

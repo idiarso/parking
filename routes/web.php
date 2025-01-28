@@ -7,6 +7,7 @@ use App\Http\Controllers\Parkir\KendaraanController;
 use App\Http\Controllers\Parkir\SlotParkirController;
 use App\Http\Controllers\Parkir\TarifParkirController;
 use App\Http\Controllers\Parkir\LaporanController;
+use App\Http\Controllers\Laporan\LaporanController as LaporanBaru;
 use App\Http\Controllers\Parkir\TestController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ParkirController;
@@ -18,6 +19,10 @@ use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\ManajemenPerangkatController;
 use App\Http\Controllers\ManajemenPenggunaController;
 use App\Http\Controllers\SimulasiParkirController;
+use App\Http\Controllers\ParkirMasukController;
+use App\Http\Controllers\ParkirKeluarController;
+use App\Http\Controllers\PintuMasukController;
+use App\Http\Controllers\PintuKeluarController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -33,17 +38,43 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Rute untuk Kendaraan
-    Route::prefix('kendaraan')->group(function () {
-        Route::get('/', [KendaraanController::class, 'daftarKendaraan'])->name('kendaraan.index');
-        Route::post('/masuk', [KendaraanController::class, 'masukKendaraan'])->name('kendaraan.masuk');
-        Route::post('/keluar', [KendaraanController::class, 'keluarKendaraan'])->name('kendaraan.keluar');
-        Route::get('/{id}', [KendaraanController::class, 'detailKendaraan'])->name('kendaraan.detail');
-        Route::delete('/{id}', [KendaraanController::class, 'hapusKendaraan'])->name('kendaraan.hapus');
-    });
+    Route::resource('kendaraan', KendaraanController::class)
+        ->middleware(['auth', 'verified']);
+
+    Route::get('/kendaraan/riwayat', [KendaraanController::class, 'riwayat'])
+        ->name('kendaraan.riwayat')
+        ->middleware(['auth', 'verified']);
 
     // Rute untuk Slot Parkir
     Route::prefix('slot-parkir')->group(function () {
-        Route::get('/', [SlotParkirController::class, 'daftarSlot'])->name('slot-parkir.index');
+        Route::get('/', [SlotParkirController::class, 'index'])
+            ->name('slot-parkir.index')
+            ->middleware(['auth', 'verified']);
+        
+        Route::get('/create', [SlotParkirController::class, 'create'])
+            ->name('slot-parkir.create')
+            ->middleware(['auth', 'verified']);
+        
+        Route::post('/', [SlotParkirController::class, 'store'])
+            ->name('slot-parkir.store')
+            ->middleware(['auth', 'verified']);
+        
+        Route::get('/{slotParkir}/edit', [SlotParkirController::class, 'edit'])
+            ->name('slot-parkir.edit')
+            ->middleware(['auth', 'verified']);
+        
+        Route::put('/{slotParkir}', [SlotParkirController::class, 'update'])
+            ->name('slot-parkir.update')
+            ->middleware(['auth', 'verified']);
+        
+        Route::delete('/{slotParkir}', [SlotParkirController::class, 'destroy'])
+            ->name('slot-parkir.destroy')
+            ->middleware(['auth', 'verified']);
+        
+        Route::post('/{slotParkir}/status', [SlotParkirController::class, 'ubahStatus'])
+            ->name('slot-parkir.ubah-status')
+            ->middleware(['auth', 'verified']);
+        
         Route::get('/kosong', [SlotParkirController::class, 'slotKosong'])->name('slot-parkir.kosong');
         Route::post('/', [SlotParkirController::class, 'buatSlot'])->name('slot-parkir.buat');
         Route::put('/{id}', [SlotParkirController::class, 'updateSlot'])->name('slot-parkir.update');
@@ -60,12 +91,24 @@ Route::middleware('auth')->group(function () {
     });
 
     // Rute untuk Laporan
-    Route::prefix('laporan')->group(function () {
-        Route::get('/harian', [LaporanController::class, 'laporanHarian'])->name('laporan.harian');
-        Route::get('/bulanan', [LaporanController::class, 'laporanBulanan'])->name('laporan.bulanan');
-        Route::get('/pendapatan', [LaporanController::class, 'laporanPendapatan'])->name('laporan.pendapatan');
-        Route::get('/', [LaporanController::class, 'daftarLaporan'])->name('laporan.index');
-        Route::get('/filter', [LaporanController::class, 'filter'])->name('laporan.filter');
+    Route::prefix('laporan')->middleware(['auth', 'verified'])->group(function () {
+        // Laporan Utama
+        Route::get('/', [LaporanBaru::class, 'index'])
+            ->name('laporan.index');
+        
+        // Laporan Harian
+        Route::get('/harian', [LaporanBaru::class, 'laporanHarian'])
+            ->name('laporan.harian');
+        
+        Route::get('/harian/cetak', [LaporanBaru::class, 'cetakLaporanHarian'])
+            ->name('laporan.harian.cetak');
+        
+        // Laporan Bulanan
+        Route::get('/bulanan', [LaporanBaru::class, 'laporanBulanan'])
+            ->name('laporan.bulanan');
+        
+        Route::get('/bulanan/cetak', [LaporanBaru::class, 'cetakLaporanBulanan'])
+            ->name('laporan.bulanan.cetak');
     });
 
     // Test Routes
@@ -81,6 +124,56 @@ Route::middleware('auth')->group(function () {
         Route::get('/keluar', [ParkirController::class, 'keluar'])->name('parkir.keluar');
         Route::post('/proses-masuk', [ParkirController::class, 'prosesMasuk'])->name('parkir.proses-masuk');
         Route::post('/proses-keluar', [ParkirController::class, 'prosesKeluar'])->name('parkir.proses-keluar');
+    });
+
+    // Parkir Masuk
+    Route::prefix('parkir')->middleware(['auth', 'verified'])->group(function () {
+        Route::get('/masuk', [ParkirMasukController::class, 'index'])
+            ->name('parkir.masuk');
+        
+        Route::post('/masuk', [ParkirMasukController::class, 'prosesParkirMasuk'])
+            ->name('parkir.masuk.proses');
+        
+        Route::post('/slot/cek', [ParkirMasukController::class, 'cekSlotTersedia'])
+            ->name('parkir.slot.cek');
+    });
+
+    // Parkir Keluar
+    Route::prefix('parkir')->middleware(['auth', 'verified'])->group(function () {
+        Route::get('/keluar', [ParkirKeluarController::class, 'index'])
+            ->name('parkir.keluar');
+        
+        Route::post('/keluar/cari', [ParkirKeluarController::class, 'cariKendaraan'])
+            ->name('parkir.keluar.cari');
+        
+        Route::post('/keluar/proses', [ParkirKeluarController::class, 'prosesParkirKeluar'])
+            ->name('parkir.keluar.proses');
+    });
+
+    // Rute untuk Pintu Masuk
+    Route::prefix('pintu-masuk')->group(function () {
+        Route::get('/', [PintuMasukController::class, 'index'])
+            ->name('pintu-masuk.index')
+            ->middleware(['auth', 'verified']);
+        
+        Route::post('/proses', [PintuMasukController::class, 'prosesKendaraanMasuk'])
+            ->name('pintu-masuk.proses')
+            ->middleware(['auth', 'verified']);
+    });
+
+    // Rute untuk Pintu Keluar
+    Route::prefix('pintu-keluar')->group(function () {
+        Route::get('/', [PintuKeluarController::class, 'index'])
+            ->name('pintu-keluar.index')
+            ->middleware(['auth', 'verified']);
+        
+        Route::post('/verifikasi', [PintuKeluarController::class, 'verifikasiKendaraan'])
+            ->name('pintu-keluar.verifikasi')
+            ->middleware(['auth', 'verified']);
+        
+        Route::post('/bayar', [PintuKeluarController::class, 'prosesPembayaran'])
+            ->name('pintu-keluar.bayar')
+            ->middleware(['auth', 'verified']);
     });
 
     // Menu Utama
@@ -204,6 +297,19 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{userId}', [ManajemenPenggunaController::class, 'hapusPengguna'])->name('manajemen-pengguna.hapus');
         Route::post('/{userId}/reset-password', [ManajemenPenggunaController::class, 'resetPassword'])->name('manajemen-pengguna.reset-password');
         Route::get('/{userId}/riwayat-login', [ManajemenPenggunaController::class, 'riwayatLogin'])->name('manajemen-pengguna.riwayat-login');
+    });
+
+    // Manajemen Tarif
+    Route::prefix('tarif')->middleware(['auth', 'verified'])->group(function () {
+        Route::get('/', [TarifParkirController::class, 'index'])->name('tarif.index');
+        Route::get('/create', [TarifParkirController::class, 'create'])->name('tarif.create');
+        Route::post('/store', [TarifParkirController::class, 'store'])->name('tarif.store');
+        Route::get('/{id}/edit', [TarifParkirController::class, 'edit'])->name('tarif.edit');
+        Route::put('/{id}', [TarifParkirController::class, 'update'])->name('tarif.update');
+        Route::delete('/{id}', [TarifParkirController::class, 'destroy'])->name('tarif.destroy');
+        Route::post('/{id}/nonaktifkan', [TarifParkirController::class, 'nonaktifkan'])->name('tarif.nonaktifkan');
+        Route::post('/{id}/aktifkan', [TarifParkirController::class, 'aktifkan'])->name('tarif.aktifkan');
+        Route::get('/riwayat', [TarifParkirController::class, 'riwayatTarif'])->name('tarif.riwayat');
     });
 });
 

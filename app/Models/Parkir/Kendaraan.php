@@ -26,6 +26,13 @@ class Kendaraan extends Model
         'waktu_keluar'
     ];
 
+    protected $casts = [
+        'waktu_masuk' => 'datetime',
+        'waktu_keluar' => 'datetime',
+        'durasi_parkir' => 'float',
+        'biaya_parkir' => 'float'
+    ];
+
     // Relasi dengan slot parkir
     public function slotParkir()
     {
@@ -55,13 +62,31 @@ class Kendaraan extends Model
         return $this;
     }
 
+    // Mutator untuk waktu masuk
+    public function setWaktuMasukAttribute($value)
+    {
+        $this->attributes['waktu_masuk'] = is_string($value) 
+            ? Carbon::parse($value) 
+            : ($value instanceof Carbon ? $value : now());
+    }
+
+    // Mutator untuk waktu keluar
+    public function setWaktuKeluarAttribute($value)
+    {
+        $this->attributes['waktu_keluar'] = is_string($value) 
+            ? Carbon::parse($value) 
+            : ($value instanceof Carbon ? $value : null);
+    }
+
     // Hitung durasi parkir dalam jam
     public function hitungDurasiParkir()
     {
-        $masuk = Carbon::parse($this->waktu_masuk);
-        $keluar = Carbon::parse($this->waktu_keluar);
-        
-        return ceil($masuk->diffInMinutes($keluar) / 60);
+        if (!$this->waktu_masuk || !$this->waktu_keluar) {
+            return 0;
+        }
+
+        $durasi = $this->waktu_masuk->diffInMinutes($this->waktu_keluar);
+        return max(1, ceil($durasi / 60)); // Minimal 1 jam
     }
 
     // Hitung biaya parkir berdasarkan durasi dan tarif
@@ -71,9 +96,59 @@ class Kendaraan extends Model
         return $durasi * $tarifPerjam;
     }
 
+    // Accessor untuk durasi parkir format
+    public function getDurasiParkirFormatAttribute()
+    {
+        $jam = floor($this->durasi_parkir);
+        $menit = round(($this->durasi_parkir - $jam) * 60);
+        return "{$jam} jam {$menit} menit";
+    }
+
+    // Accessor untuk biaya parkir format
+    public function getBiayaParkirFormatAttribute()
+    {
+        return 'Rp ' . number_format($this->biaya_parkir, 0, ',', '.');
+    }
+
     // Scope untuk filter kendaraan yang sedang parkir
     public function scopeSedangParkir($query)
     {
         return $query->where('status', 'parkir');
+    }
+
+    // Scope untuk pencarian berdasarkan plat nomor
+    public function scopeCariPlatNomor($query, $platNomor)
+    {
+        return $query->where('plat_nomor', 'like', "%{$platNomor}%");
+    }
+
+    // Scope untuk filter jenis kendaraan
+    public function scopeJenisKendaraan($query, $jenis)
+    {
+        return $query->where('jenis_kendaraan', $jenis);
+    }
+
+    // Scope untuk filter status
+    public function scopeStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    // Scope untuk filter rentang waktu
+    public function scopeRentangWaktu($query, $mulai, $selesai)
+    {
+        return $query->whereBetween('waktu_masuk', [$mulai, $selesai]);
+    }
+
+    // Metode untuk mendapatkan kendaraan aktif (masih parkir)
+    public static function kendaraanAktif()
+    {
+        return self::where('status', 'parkir')->get();
+    }
+
+    // Metode untuk mendapatkan riwayat kendaraan
+    public static function riwayatKendaraan($limit = 50)
+    {
+        return self::orderBy('waktu_masuk', 'desc')->limit($limit)->get();
     }
 }

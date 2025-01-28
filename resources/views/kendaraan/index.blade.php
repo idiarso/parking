@@ -1,183 +1,115 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Manajemen Kendaraan') }}
+            </h2>
+            <a href="{{ route('kendaraan.create') }}" class="btn btn-primary">
+                Tambah Kendaraan Baru
+            </a>
+        </div>
+    </x-slot>
 
-@section('styles')
-<style>
-    .table-hover tbody tr:hover {
-        background-color: rgba(0,123,255,0.1);
-        cursor: pointer;
-    }
-</style>
-@endsection
-
-@section('content')
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Manajemen Kendaraan</h6>
-                    <div class="btn-group">
-                        <a href="{{ route('kendaraan.tambah') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Tambah Kendaraan
-                        </a>
-                        <button class="btn btn-success btn-sm ml-2" data-bs-toggle="modal" data-bs-target="#importModal">
-                            <i class="fas fa-upload"></i> Import
-                        </button>
-                        <button class="btn btn-info btn-sm ml-2" data-bs-toggle="modal" data-bs-target="#exportModal">
-                            <i class="fas fa-download"></i> Ekspor
-                        </button>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Filter -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 p-6">
+                <form method="GET" action="{{ route('kendaraan.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Plat Nomor</label>
+                        <input type="text" name="plat_nomor" value="{{ request('plat_nomor') }}" 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="kendaraanTable" width="100%" cellspacing="0">
-                            <thead>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Jenis Kendaraan</label>
+                        <select name="jenis_kendaraan" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">Semua Jenis</option>
+                            <option value="motor" {{ request('jenis_kendaraan') == 'motor' ? 'selected' : '' }}>Motor</option>
+                            <option value="mobil" {{ request('jenis_kendaraan') == 'mobil' ? 'selected' : '' }}>Mobil</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Status</label>
+                        <select name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">Semua Status</option>
+                            <option value="parkir" {{ request('status') == 'parkir' ? 'selected' : '' }}>Parkir</option>
+                            <option value="keluar" {{ request('status') == 'keluar' ? 'selected' : '' }}>Keluar</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end space-x-2">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="{{ route('kendaraan.index') }}" class="btn btn-secondary">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Kendaraan -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Plat Nomor</th>
-                                    <th>Jenis Kendaraan</th>
-                                    <th>Waktu Masuk</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th scope="col" class="px-6 py-3">Plat Nomor</th>
+                                    <th scope="col" class="px-6 py-3">Jenis Kendaraan</th>
+                                    <th scope="col" class="px-6 py-3">Waktu Masuk</th>
+                                    <th scope="col" class="px-6 py-3">Status</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($kendaraan as $item)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $item->plat_nomor }}</td>
-                                    <td>{{ $item->jenis_kendaraan }}</td>
-                                    <td>{{ $item->waktu_masuk->format('d M Y H:i') }}</td>
-                                    <td>
-                                        <span class="badge 
-                                            {{ $item->status == 'parkir' ? 'bg-warning' : 
-                                               ($item->status == 'keluar' ? 'bg-success' : 'bg-secondary') }}">
+                                @forelse($kendaraan as $item)
+                                <tr class="bg-white border-b hover:bg-gray-50">
+                                    <td class="px-6 py-4">{{ $item->plat_nomor }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="badge {{ $item->jenis_kendaraan == 'motor' ? 'badge-info' : 'badge-warning' }}">
+                                            {{ ucfirst($item->jenis_kendaraan) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">{{ $item->waktu_masuk->format('d M Y H:i') }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="badge {{ $item->status == 'parkir' ? 'badge-success' : 'badge-secondary' }}">
                                             {{ ucfirst($item->status) }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ route('kendaraan.detail', $item->id) }}" class="btn btn-info btn-sm">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('kendaraan.edit', $item->id) }}" class="btn btn-warning btn-sm">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button onclick="konfirmasiHapus({{ $item->id }})" class="btn btn-danger btn-sm">
-                                                <i class="fas fa-trash"></i>
+                                    <td class="px-6 py-4 flex space-x-2">
+                                        <a href="{{ route('kendaraan.edit', $item->id) }}" class="btn btn-sm btn-warning">
+                                            Edit
+                                        </a>
+                                        <form action="{{ route('kendaraan.destroy', $item->id) }}" method="POST" 
+                                              onsubmit="return confirm('Yakin ingin menghapus data kendaraan?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                Hapus
                                             </button>
-                                        </div>
+                                        </form>
                                     </td>
                                 </tr>
-                                @endforeach
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center">
+                                        Tidak ada data kendaraan
+                                    </td>
+                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
-                    {{ $kendaraan->links() }}
+
+                    <!-- Pagination -->
+                    <div class="mt-4">
+                        {{ $kendaraan->appends(request()->query())->links() }}
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Modal Import -->
-<div class="modal fade" id="importModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Import Data Kendaraan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form action="{{ route('kendaraan.import') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="mb-3">
-                        <label class="form-label">Pilih File Excel</label>
-                        <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Import</button>
-                </form>
+            <!-- Tombol Riwayat -->
+            <div class="mt-4 text-right">
+                <a href="{{ route('kendaraan.riwayat') }}" class="btn btn-secondary">
+                    Lihat Riwayat Kendaraan
+                </a>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Modal Ekspor -->
-<div class="modal fade" id="exportModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Ekspor Data Kendaraan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form action="{{ route('kendaraan.export') }}" method="GET">
-                    <div class="mb-3">
-                        <label class="form-label">Format Ekspor</label>
-                        <select name="format" class="form-select">
-                            <option value="xlsx">Excel (.xlsx)</option>
-                            <option value="pdf">PDF</option>
-                            <option value="csv">CSV</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Filter Tanggal</label>
-                        <div class="input-group">
-                            <input type="date" name="tanggal_mulai" class="form-control">
-                            <span class="input-group-text">sampai</span>
-                            <input type="date" name="tanggal_akhir" class="form-control">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Ekspor</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@section('scripts')
-<script>
-function konfirmasiHapus(id) {
-    Swal.fire({
-        title: 'Konfirmasi Hapus',
-        text: 'Apakah Anda yakin ingin menghapus kendaraan ini?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            axios.delete(`/kendaraan/hapus/${id}`)
-                .then(response => {
-                    Swal.fire(
-                        'Terhapus!',
-                        'Data kendaraan berhasil dihapus.',
-                        'success'
-                    ).then(() => {
-                        location.reload();
-                    });
-                })
-                .catch(error => {
-                    Swal.fire(
-                        'Gagal!',
-                        'Terjadi kesalahan saat menghapus data.',
-                        'error'
-                    );
-                });
-        }
-    });
-}
-
-$(document).ready(function() {
-    $('#kendaraanTable').DataTable({
-        responsive: true,
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
-        }
-    });
-});
-</script>
-@endsection
+</x-app-layout>

@@ -2,45 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Parkir\Kendaraan;
 use App\Models\Parkir\SlotParkir;
 use App\Models\Parkir\TarifParkir;
-use App\Models\Parkir\Laporan;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Statistik harian
-        $hariIni = Carbon::today();
-        $kendaraanHariIni = Kendaraan::whereDate('waktu_masuk', $hariIni)->count();
-        $pendapatanHariIni = Kendaraan::whereDate('waktu_keluar', $hariIni)->sum('biaya_parkir');
+        // Statistik Kendaraan Hari Ini
+        $today = Carbon::today();
+        $kendaraanHariIni = Kendaraan::whereDate('waktu_masuk', $today)->get();
+        
+        $totalKendaraan = $kendaraanHariIni->count();
+        $kendaraanPerJenis = $kendaraanHariIni->groupBy('jenis_kendaraan')
+            ->map->count();
 
-        // Status slot parkir
-        $slotMotor = SlotParkir::where('jenis_kendaraan', 'motor')->count();
-        $slotMotorTerisi = SlotParkir::where('jenis_kendaraan', 'motor')->where('status', 'terisi')->count();
-        $slotMobil = SlotParkir::where('jenis_kendaraan', 'mobil')->count();
-        $slotMobilTerisi = SlotParkir::where('jenis_kendaraan', 'mobil')->where('status', 'terisi')->count();
+        // Statistik Slot Parkir
+        $totalSlot = SlotParkir::count();
+        $slotTerisi = SlotParkir::where('status', 'terisi')->count();
+        $slotKosong = $totalSlot - $slotTerisi;
 
-        // Tarif parkir
-        $tarifMotor = TarifParkir::where('jenis_kendaraan', 'motor')->first();
-        $tarifMobil = TarifParkir::where('jenis_kendaraan', 'mobil')->first();
+        // Pendapatan Harian
+        $pendapatanHarian = $kendaraanHariIni->sum('biaya_parkir');
 
-        // Laporan terakhir
-        $laporanTerakhir = Laporan::latest()->first();
+        // Grafik Pendapatan Mingguan
+        $pendapatanMingguan = $this->getPendapatanMingguan();
 
-        return view('dashboard', [
-            'kendaraan_hari_ini' => $kendaraanHariIni,
-            'pendapatan_hari_ini' => $pendapatanHariIni,
-            'slot_motor_total' => $slotMotor,
-            'slot_motor_terisi' => $slotMotorTerisi,
-            'slot_mobil_total' => $slotMobil,
-            'slot_mobil_terisi' => $slotMobilTerisi,
-            'tarif_motor' => $tarifMotor,
-            'tarif_mobil' => $tarifMobil,
-            'laporan_terakhir' => $laporanTerakhir
+        // Grafik Okupansi Parkir
+        $okupasiParkir = $this->getOkupasiParkir();
+
+        return view('dashboard.index', [
+            'totalKendaraan' => $totalKendaraan,
+            'kendaraanPerJenis' => $kendaraanPerJenis,
+            'totalSlot' => $totalSlot,
+            'slotTerisi' => $slotTerisi,
+            'slotKosong' => $slotKosong,
+            'pendapatanHarian' => $pendapatanHarian,
+            'pendapatanMingguan' => $pendapatanMingguan,
+            'okupasiParkir' => $okupasiParkir
         ]);
+    }
+
+    private function getPendapatanMingguan()
+    {
+        $startOfWeek = Carbon::now()->startOfWeek();
+        $endOfWeek = Carbon::now()->endOfWeek();
+
+        return Kendaraan::select(
+            DB::raw('DATE(waktu_masuk) as tanggal'),
+            DB::raw('SUM(biaya_parkir) as total_pendapatan')
+        )
+        ->whereBetween('waktu_masuk', [$startOfWeek, $endOfWeek])
+        ->groupBy('tanggal')
+        ->orderBy('tanggal')
+        ->get()
+        ->pluck('total_pendapatan', 'tanggal');
+    }
+
+    private function getOkupasiParkir()
+    {
+        $startOfDay = Carbon::now()->startOfDay();
+        $endOfDay = Carbon::now()->endOfDay();
+
+        return Kendaraan::select(
+            DB::raw('HOUR(waktu_masuk) as jam'),
+            DB::raw('COUNT(*) as jumlah_kendaraan')
+        )
+        ->whereBetween('waktu_masuk', [$startOfDay, $endOfDay])
+        ->groupBy('jam')
+        ->orderBy('jam')
+        ->get()
+        ->pluck('jumlah_kendaraan', 'jam');
     }
 }
